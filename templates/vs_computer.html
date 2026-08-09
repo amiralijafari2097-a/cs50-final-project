@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بازی دوز با کامپیوتر</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container game-container">
+        <h1>❌ بازی دوز ⭕ <span style="font-size: 18px;">(در مقابل کامپیوتر)</span></h1>
+        
+        <div class="stats-box" style="margin-bottom: 20px;">
+            <h3>📊 آمار بازی‌های گذشته:</h3>
+            <p>بردهای شما (X): <strong>{{ stats.player_wins }}</strong></p>
+            <p>بردهای کامپیوتر (O): <strong>{{ stats.computer_wins }}</strong></p>
+            <p>مساوی: <strong>{{ stats.draws }}</strong></p>
+        </div>
+
+        <div id="status" class="status-text">نوبت شماست (X)</div>
+        
+        <div class="board" id="board">
+            <div class="cell" onclick="makeMove(0)"></div>
+            <div class="cell" onclick="makeMove(1)"></div>
+            <div class="cell" onclick="makeMove(2)"></div>
+            <div class="cell" onclick="makeMove(3)"></div>
+            <div class="cell" onclick="makeMove(4)"></div>
+            <div class="cell" onclick="makeMove(5)"></div>
+            <div class="cell" onclick="makeMove(6)"></div>
+            <div class="cell" onclick="makeMove(7)"></div>
+            <div class="cell" onclick="makeMove(8)"></div>
+        </div>
+
+        <div id="gameOverMessage" class="game-over-msg" style="display:none;"></div>
+        <button id="playAgainBtn" class="btn-primary" style="display:none;" onclick="location.reload()">🔄 بازی جدید</button>
+    </div>
+
+    <script>//***
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = true;
+        let isMyTurn = true;
+
+        async function makeMove(index) {
+            if (!gameActive || !isMyTurn || board[index] !== '') return;
+            
+            board[index] = 'X';
+            document.querySelector(`.cell[onclick="makeMove(${index})"]`).innerText = 'X';
+            isMyTurn = false;
+            document.getElementById('status').innerText = "کامپیوتر در حال فکر کردن...";
+
+            try {
+                const response = await fetch('/move', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({board: board})
+                });
+                
+                const data = await response.json();
+
+                if (data.move !== null) {
+                    board = data.board;
+                    document.querySelector(`.cell[onclick="makeMove(${data.move})"]`).innerText = 'O';
+                }
+
+                if (data.winner) {
+                    gameActive = false;
+                    const msgDiv = document.getElementById('gameOverMessage');
+                    const btn = document.getElementById('playAgainBtn');
+                    if (data.winner === 'X') {
+                        msgDiv.innerText = "🎉 شما برنده شدید!";
+                        msgDiv.style.color = "green";
+                    } else if (data.winner === 'O') {
+                        msgDiv.innerText = "💻 کامپیوتر برنده شد!";
+                        msgDiv.style.color = "red";
+                    } else {
+                        msgDiv.innerText = "🤝 مساوی!";
+                        msgDiv.style.color = "orange";
+                    }
+                    msgDiv.style.display = 'block';
+                    btn.style.display = 'inline-block';
+                    document.getElementById('status').innerText = "بازی تمام شد!";
+                } else {
+                    isMyTurn = true;
+                    document.getElementById('status').innerText = "نوبت شماست";
+                }
+            } catch (error) {
+                console.error("خطا:", error);
+                document.getElementById('status').innerText = "خطا در ارتباط با سرور!";
+                isMyTurn = true;
+            }
+        }
+    </script>
+</body>
+</html>
