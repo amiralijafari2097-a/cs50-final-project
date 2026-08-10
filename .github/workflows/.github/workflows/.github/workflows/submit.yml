@@ -1,0 +1,15 @@
+name: Submit to CS50x
+on:
+  push:
+    branches:
+      - main
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Submit to CS50
+        run: |
+          wget https://github.com/cs50/submit50/raw/main/install.sh
+          bash install.sh
+          submit50 cs50/problems/2026/x/project
